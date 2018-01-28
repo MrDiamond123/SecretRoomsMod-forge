@@ -1,168 +1,93 @@
-// this part adds in ForgeGradle
 buildscript {
     repositories {
-        mavenCentral()
-        maven {
-            name = "forge"
-            url = "http://files.minecraftforge.net/maven"
-        }
-        maven {
-            name = "sonatype"
-            url = "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
+        jcenter()
+        maven { url = "http://files.minecraftforge.net/maven" }
     }
-    dependencies { classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT' }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
 }
+apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'maven'
+//Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
-apply plugin: "forge"
 
-// stuff specific to my mod
-group = 'com.github.abrarsyed'
-version = "4.7.1"
-archivesBaseName = 'secretroomsmod'
+version = "1.12.2-5.2.5"
+group = "com.wynprice.secretroomsmod" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "secretroomsmod"
+
+sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
+compileJava {
+    sourceCompatibility = targetCompatibility = '1.8'
+}
 
 minecraft {
-    version = "1.7.10-10.13.2.1291" // grab latest forge
+    version = "1.12.2-14.23.1.2562"
     runDir = "run"
-
-    // replacing
-    replace "@CHANGE_VERSION@", "[4.7,)"
+    mappings = "snapshot_20171003"
+    
+    replace "@CHANGE_VERSION@", "[5.0.0,)"
     replace "@MC_VERSION@", project.minecraft.version
     replace "@VERSION@", project.version
-    replaceIn "SecretRooms.java"
-}
-
-// add some stuff to the version
-// spit out the version for debugging sake
-logger.lifecycle ""+version
-version = "${minecraft.version}-$version.${System.getenv().BUILD_NUMBER}"
-logger.lifecycle ""+version
-
-processResources {
-    inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraft.version
-
-    // replace stuff in text files, not binary ones.
-    from(sourceSets.main.resources.srcDirs) {
-        include '**/*.info'
-
-        // replace version and MCVersion
-        // forge version is also accessible via project.minecraftforgeVersion
-        // it contains the full minecraft version, including buildNumber
-        expand 'version':project.version, 'mcversion':project.minecraft.version
-    }
-
-    // copy everything else, thats not text
-    from(sourceSets.main.resources.srcDirs) { exclude '**/*.info' }
+    replaceIn "SecretRooms5.java"
 }
 
 repositories {
-     maven { // The repo from which to get waila
-         name "Mobius Repo"
-         url "http://mobiusstrip.eu/maven"
-     }
-     maven { // the repo from which to get NEI and stuff
-         name 'CB Repo'
-         url "http://chickenbones.net/maven/"
-     }
+
+    maven { // TOP
+        name 'tterrag maven'
+        url "http://maven.tterrag.com/"
+    }
+
+    maven {
+        name = "CoFH Maven"
+        url = "http://maven.covers1624.net"
+    }
+
+    maven {
+        // location of the maven that hosts JEI files
+        name = "Progwml6 maven"
+        url = "http://dvs1.progwml6.com/files/maven"
+    }
+    maven {
+        // location of a maven mirror for JEI files, as a fallback
+        name = "ModMaven"
+        url = "modmaven.k-4u.nl"
+    }
 }
 
 dependencies {
-    // waila
-    compile "mcp.mobius.waila:Waila:1.5.8_1.7.10"
-
-	// malisis doors
-    compile 'net.malisis:malisisdoors:1.7.10-1.4.3:dev'
+    deobfCompile "mcjty.theoneprobe:TheOneProbe-1.12:1.12-1.4.18-10"
+    deobfCompile "cofh:RedstoneFlux:1.12-2.0.0.1:universal"
+    deobfProvided "mezz.jei:jei_1.12.2:4.8.5.138:api"
+    runtime "mezz.jei:jei_1.12.2:4.8.5.138"
+   
 }
 
-// because the normal output has been made to be obfuscated
-task deobfJar(type: Jar) {
-    from sourceSets.main.output
-    classifier = 'dev'
-}
-
-// add a source jar
-task sourceJar(type: Jar, dependsOn: "sourceMainJava") {
-    from "build/sources/java"
-    classifier = 'sources'
-}
-
-// add a javadoc jar
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from 'build/docs/javadoc'
-}
-
-// deployement stuff
-
-configurations { deployerJars }
-
-dependencies { deployerJars "org.apache.maven.wagon:wagon-ssh:2.2" }
-
-artifacts {
-    archives sourceJar
-    archives deobfJar
-    archives javadocJar
-}
-
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            configuration = configurations.deployerJars
-
-            repository(url: "http://files.minecraftforge.net/maven/manage/upload") {
-                authentication(userName: "AbrarSyed", password: project.hasProperty(forgeMavenPass) ? null : project.getProperty('forgeMavenPass')) // the elvis operator. look it up.
-            }
-
-            pom {
-                groupId = project.group
-                version = project.version
-                artifactId = project.archivesBaseName
-                project {
-                    name project.archivesBaseName
-                    packaging 'jar'
-                    description 'SecretRoomsMod '
-                    url 'https://github.com/AbrarSyed/SecretRoomsMod-forge'
-
-                    scm {
-                        url 'https://github.com/AbrarSyed/SecretRoomsMod-forge'
-                        connection 'scm:git:git://github.com/AbrarSyed/SecretRoomsMod-forge.git'
-                        developerConnection 'scm:git:git@github.com:AbrarSyed/SecretRoomsMod-forge.git'
-                    }
-
-                    issueManagement {
-                        system 'github'
-                        url 'https://github.com/AbrarSyed/SecretRoomsMod-forge/issues'
-                    }
-
-                    licenses {
-                        license {
-                            name 'The Eclipse Public Liscence'
-                            url 'http://www.eclipse.org/legal/epl-v10.html'
-                            distribution 'repo'
-                        }
-                    }
-
-                    developers {
-                        developer {
-                            id 'AbrarSyed'
-                            name 'AbrarSyed'
-                            roles { role 'developer' }
-                        }
-                        developer {
-                            id 'AlexBegt'
-                            name 'AlexBegt'
-                            roles { role 'contributor' }
-                        }
-                        developer {
-                            id 'CaptainShadows'
-                            name 'CaptainShadows'
-                            roles { role 'contributor' }
-                        }
-                    }
-                }
-            }
-        }
+//Adds the LoadingPlugin description to the manifest so forge finds it.
+jar {
+    manifest {
+        attributes 'FMLCorePlugin': 'com.wynprice.secretroomsmod.core.SRMCore',
+                'FMLCorePluginContainsFMLMod': 'true'
     }
 }
+
+processResources {
+    // this will ensure that this task is redone when the versions change.
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    // replace stuff in mcmod.info, nothing else
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+                
+        // replace version and mcversion
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+        
+    // copy everything else except the mcmod.info
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+

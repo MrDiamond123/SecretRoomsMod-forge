@@ -1,8 +1,10 @@
 # gradle stuff
-build
-.gradle
+/*
+!/src
+!build.gradle
 
 # eclipse stuff
+eclipse
 .classpath
 .project
 .settings
@@ -17,3 +19,5 @@ out
 *.iml
 *.iws
 *.ipr
+src/main/resources/assets/secretroomsmod/recipes/recipeConverter.py
+*.py
